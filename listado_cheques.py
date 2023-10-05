@@ -23,7 +23,6 @@ def validar_dni(dni):
 def validar_fechas(fecha_inicio):
     try:
         fecha_inicio_unix = int(fecha_inicio)
-        # Validar que la fecha de inicio se encuentre en el archivo CSV
         with open('cheques.csv', mode='r') as file:
             csv_reader = csv.DictReader(file, delimiter=';')
             for row in csv_reader:
