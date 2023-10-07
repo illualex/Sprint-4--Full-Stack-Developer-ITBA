@@ -1,197 +1,105 @@
+import argparse
 import csv
-import os
 import time
 from datetime import datetime
 
-# FUNCIÓN LIMPIAR PANTALLA
-def limpiar_pantalla():
-    if os.name == 'posix':
-        _ = os.system('clear')
-    else:
-        _ = os.system('cls')
-
-# VALIDADOR DNI
-def validar_dni(dni):
-    with open('cheques.csv', mode='r') as file:
-        csv_reader = csv.DictReader(file, delimiter=';')
-        for row in csv_reader:
-            if row['DNI'] == dni:
-                return True
-    return False
-
-# VALIDADOR DE FECHA
-def validar_fechas(fecha_inicio):
+# FUNCIÓN PARA VALIDAR LAS FECHAS
+def validar_fecha(fecha_str):
     try:
-        fecha_inicio_unix = int(fecha_inicio)
-        with open('cheques.csv', mode='r') as file:
-            csv_reader = csv.DictReader(file, delimiter=';')
-            for row in csv_reader:
-                if fecha_inicio_unix == int(row['FechaOrigen']):
-                    return True
-        return False
+        fecha = datetime.strptime(fecha_str, '%Y-%m-%d')
+        return fecha
     except ValueError:
-        return False
+        raise argparse.ArgumentTypeError("El formato de fecha debe ser 'yyyy-MM-dd'")
 
+# FUNCIÓN PARA FORMATEAR LA FECHA DEL CSV (yyyy-MM-dd HH:mm:ss)
+def formatear_fecha(timestamp):
+    fecha_utc = datetime.utcfromtimestamp(timestamp)
+    return fecha_utc.strftime('%Y-%m-%d %H:%M:%S')
 
-# FORMATEO DE FECHA
-def formatear_fecha(fecha_unix):
-    fecha = datetime.utcfromtimestamp(fecha_unix)
-    return fecha.strftime('%Y-%m-%d %H:%M:%S')
-
-# MOSTRAR MENU PRINCIPAL
-def mostrar_menu():
-    limpiar_pantalla()
-    print("------ MENU CHEQUES ------\n")
-    print("1) Procesar Cheque")
-    print("2) Consultar Cheque")
-    print("3) Salir del Programa")
-
-# MOSTRAR MENU DNI
-def escribir_dni():
-    limpiar_pantalla()
-    print("--- CONSULTAR CHEQUE ---\n")
-    print("1) Escribir DNI")
-    print("2) Volver atrás")
-
-# MOSTRAR MENU SALIDA
-def mostrar_menu_salida():
-    print("\nSeleccione una opción de salida:")
-    print("1) PANTALLA")
-    print("2) CSV")
-    print("3) Volver atrás")
-
-# FUNCIÓN PARA CONSULTAR EL CHEQUE
-def consultar_estado_cheque():
-    limpiar_pantalla()
-    print("----- ESTADO DEL CHEQUE -----\n")
-    print("Desea consultar el Estado del Cheque?")
-    print("Escriba 'Y' para Sí o 'N' para No")
-    respuesta_estado = input("Esperando la respuesta: ")
-
-    if respuesta_estado == 'Y' or respuesta_estado == 'y':
-        while True:
-
-            # PREGUNTAR ESTADO DEL CHEQUE
-            limpiar_pantalla()
-            print("Seleccione el Estado del Cheque:")
-            print("1) PENDIENTE")
-            print("2) APROBADO")
-            print("3) RECHAZADO")
-            print("4) Volver atrás")
-            opcion_estado_cheque = input("Esperando la Operación: ")
-
-            if opcion_estado_cheque == '1':
-                limpiar_pantalla()
-                print("Ha seleccionado PENDIENTE")
-                preguntar_fechas()
-                volver_al_menu()
-            elif opcion_estado_cheque == '2':
-                limpiar_pantalla()
-                print("Ha seleccionado APROBADO")
-                preguntar_fechas()
-                volver_al_menu()
-            elif opcion_estado_cheque == '3':
-                limpiar_pantalla()
-                print("Ha seleccionado RECHAZADO")
-                preguntar_fechas()
-                volver_al_menu()
-            elif opcion_estado_cheque == '4':
-                break
-            else:
-                input("Opción no válida. Presione Enter para continuar.")
-    elif respuesta_estado == 'N' or respuesta_estado == 'n':
-        print("SE ELEGIO NO")
+# FUNCIÓN PARA VERIFICAR INGRESO DEL TIPO DE CHEQUE (EMITIDO O DEPOSITADO)
+def validar_accion(value):
+    if value.upper() in ["EMITIDO", "DEPOSITADO"]:
+        return value
     else:
-        input("Opción no válida. Presione Enter para continuar.")
+        raise argparse.ArgumentTypeError("Ingrese un Tipo de Cheque: (EMITIDO o DEPOSITADO)")
 
-# FUNCIÓN PARA PREGUNTAR FECHA
-def preguntar_fechas():
-    limpiar_pantalla()
-    print("Desea introducir un rango de fechas?")
-    print("Escriba 'Y' para Sí o 'N' para No")
-    respuesta_fechas = input("Esperando la respuesta: ")
-
-    if respuesta_fechas == 'Y' or respuesta_fechas == 'y':
-        limpiar_pantalla()
-        print("---- FECHA DE ORIGEN ----\n")
-        fecha_inicio = input("Ingrese la fecha de inicio: ")
-
-        if validar_fechas(fecha_inicio):
-            fecha_inicio_formateada = formatear_fecha(int(fecha_inicio))
-            print("Fechas válidas: {fecha}")
-        else:
-            print("Datos incorrectos. Las fechas no coinciden con los registros.")
-    elif respuesta_fechas == 'N' or respuesta_fechas == 'n':
-        print("NO SE ELIGIÓ FECHAS")
+# FUNCIÓN PARA VERIFICAR INGRESO DEL TIPO DE SALIDA (PANTALLA O CSV)
+def validar_formato(value):
+    if value.upper()  in ["PANTALLA", "CSV"]:
+        return value
     else:
-        input("Opción no válida. Presione Enter para continuar.")
+        raise argparse.ArgumentTypeError("Ingrese un Tipo de salida: (PANTALLA o CSV)")
 
-# FUNCIÓN PARA VOLVER AL MENU
-def volver_al_menu():
-    input("\nPresione Enter para volver al menú principal.")
-    mostrar_menu()
+# FUNCIÓN PARA VERIFICAR INGRESO DEL ESTADO DEL CHEQUE (PENDIENTE, APROBADO, RECHAZADO)
+def validar_estado(value):
+    if value.upper()  in ["PENDIENTE", "APROBADO", "RECHAZADO"]:
+        return value
+    else:
+        raise argparse.ArgumentTypeError("Ingrese el Estado del Cheque: (PENDIENTE, APROBADO o RECHAZADO)")
 
-# FUNCIÓN PRINCIPAL
-def main():
-    while True:
+# PARSE DE ARGUMENTOS
+parser = argparse.ArgumentParser(description="Consulta de cheques bancarios en un archivo CSV.")
+parser.add_argument("archivo_csv", help="Nombre del archivo CSV")
+parser.add_argument("DNI", type=int, help="Número de DNI (entre 7 y 8 dígitos)")
+parser.add_argument("formato", type=validar_formato, metavar="FORMATO", help="Formato de salida (PANTALLA o CSV)")
+parser.add_argument("accion", type=validar_accion, metavar="ACCION", help="Tipo de cheque (EMITIDO o DEPOSITADO)")
+parser.add_argument("--estado", type=validar_estado, metavar="ESTADO", help="Filtrar por estado (opcional)")
+parser.add_argument("--fecha", type=validar_fecha, help="Filtrar por fecha (opcional)")
 
-        # MENU INICIO
-        mostrar_menu()
-        opcion = input("\nElige una opción: ")
-        if opcion == '1':
-            limpiar_pantalla()
-            input("Ha seleccionado Procesar Cheque")
-            mostrar_menu()
-            # LÓGICA PARA PROCESAR CHEQUE
+# OBTENER LOS ARGUMENTOS
+args = parser.parse_args()
 
-        elif opcion == '2':
+# VALIDAR CANTIDAD DE DÍGITOS PARA EL DNI
+if not (7 <= len(str(args.DNI)) <= 8):
+    print("Error: El número de DNI debe tener entre 7 y 8 dígitos.")
+    exit()
 
-            # PREGUNTA DNI
-            while True:
-                limpiar_pantalla()
-                escribir_dni()
-                opcion_consultar = input("\nSeleccione una opción: ")
+# RASTREADOR DE DUPLICADOS EN NUMERO DE CHEQUE
+numeros_de_cheque_duplicados = set()
 
-                if opcion_consultar == '1':
-                    limpiar_pantalla()
-                    print ("----- DNI -----\n")
-                    dni = input("Ingrese el DNI: ")
-                    if validar_dni(dni):
-                        while True:
+# ABRE EL CSV Y PROCESA LOS DATOS SEPARADOS POR ';'
+with open(args.archivo_csv, newline='') as csvfile:
+    reader = csv.DictReader(csvfile, delimiter=';')
+    resultados = []
+    for row in reader:
+        numero_cheque = int(row["NroCheque"])
+        cuenta_origen = row["NumeroCuentaOrigen"]
 
-                            #TIPO DE SALIDA
-                            limpiar_pantalla()
-                            print(f"El DNI {dni} es válido.")
-                            mostrar_menu_salida()
-                            opcion_menu = input("\nEsperando la Operación: ")
-                            if opcion_menu == '1':
-                                limpiar_pantalla()
-                                print("Ha seleccionado PANTALLA")
-                                consultar_estado_cheque()
-                            elif opcion_menu == '2':
-                                limpiar_pantalla()
-                                print("Ha seleccionado CSV")
-
-                                # LÓGICA PARA EL CSV
-
-                            elif opcion_menu == '3':
-                                break
-                            else:
-                                input("\nOpción no válida. Presione Enter para continuar.")
-                    else:
-                        input("\nDNI no válido. Presione Enter para continuar.")
-                elif opcion_consultar == '2':
-                    break
-                else:
-                    input("\nOpción no válida. Presione Enter para continuar.")
-        elif opcion == '3':
-            limpiar_pantalla()
-            print("Saliendo del programa...")
-            input("\nPresione Enter.")
-            limpiar_pantalla()
-            break
+        # VERIFICA EL NUMERO DE CHEQUE Y QUE NO HAYA DUPLICADOS
+        if (numero_cheque, cuenta_origen) in numeros_de_cheque_duplicados:
+            print(f"Error: Número de cheque duplicado ({numero_cheque}) en la cuenta {cuenta_origen}.")
         else:
-            input("Opción no válida. Presione Enter para continuar.")
+            numeros_de_cheque_duplicados.add((numero_cheque, cuenta_origen))
+            if int(row["DNI"]) == args.DNI:
+                if args.estado is None or row["Estado"].lower().strip() == args.estado.lower().strip():
+                    if args.fecha is None or datetime.utcfromtimestamp(int(row["FechaOrigen"])).date() <= args.fecha.date():
+                        resultados.append(row)
 
-if __name__ == "__main__":
-    main()
+# MUESTRA EL PRINT EN PANTALLA DE LOS DATOS DADO POR ARGUMENTOS
+if args.formato == "PANTALLA":
+    if resultados:
+        # GENERA UNA TABLA PARA QUE LA SALIDA DE PANTALLA SEA VISUALMENTE MAS ORDENADA
+        print("NroCheque | CodigoBanco | CodigoSucursal | NumeroCuentaOrigen | NumeroCuentaDestino | Valor | FechaOrigen | FechaPago | DNI | Estado")
+        print("-" * 115)
+        for resultado in resultados:
+            fecha_origen = formatear_fecha(int(resultado['FechaOrigen']))
+            fecha_pago = formatear_fecha(int(resultado['FechaPago']))
+            print(f"{resultado['NroCheque']:9} | {resultado['CodigoBanco']:12} | {resultado['CodigoSucursal']:14} | {resultado['NumeroCuentaOrigen']:19} | {resultado['NumeroCuentaDestino']:19} | {resultado['Valor']:8} | {fecha_origen:19} | {fecha_pago:17} | {resultado['DNI']:10} | {resultado['Estado']}")
+        print("-" * 115)
+    else:
+        print("No se encontraron resultados.")
+
+ # MUESTRA LA EXPORTACIÓN DE LOS DATOS DADO POR ARGUMENTOS
+elif args.formato == "CSV":
+     # EXPORTA EL ARCHIVO CSV CON EL 'DNI_HORAACTUAL.CSV'
+    nombre_archivo_salida = f"{args.DNI}_{int(time.time())}.csv"
+    with open(nombre_archivo_salida, mode='w', newline='') as csvfile:
+        fieldnames = ["NroCheque", "CodigoBanco", "CodigoSucursal", "NumeroCuentaOrigen", "NumeroCuentaDestino", "Valor", "FechaOrigen", "FechaPago", "DNI", "Estado"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames,  delimiter=';')
+        writer.writeheader()
+        for resultado in resultados:
+            resultado["FechaOrigen"] = formatear_fecha(int(resultado["FechaOrigen"]))
+            resultado["FechaPago"] = formatear_fecha(int(resultado["FechaPago"]))
+            writer.writerow(resultado)
+
+    print(f"Resultados guardados en '{nombre_archivo_salida}' en formato CSV.")

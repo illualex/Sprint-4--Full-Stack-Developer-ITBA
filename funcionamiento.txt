@@ -1,4 +1,0 @@
-iniciar programa python:
-python listado_cheques.py cheques.csv
-pausar:
-ctrl + c
