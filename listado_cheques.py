@@ -25,14 +25,14 @@ def validar_accion(value):
 
 # FUNCIÓN PARA VERIFICAR INGRESO DEL TIPO DE SALIDA (PANTALLA O CSV)
 def validar_formato(value):
-    if value.upper()  in ["PANTALLA", "CSV"]:
+    if value.upper() in ["PANTALLA", "CSV"]:
         return value
     else:
         raise argparse.ArgumentTypeError("Ingrese un Tipo de salida: (PANTALLA o CSV)")
 
 # FUNCIÓN PARA VERIFICAR INGRESO DEL ESTADO DEL CHEQUE (PENDIENTE, APROBADO, RECHAZADO)
 def validar_estado(value):
-    if value.upper()  in ["PENDIENTE", "APROBADO", "RECHAZADO"]:
+    if value.upper() in ["PENDIENTE", "APROBADO", "RECHAZADO"]:
         return value
     else:
         raise argparse.ArgumentTypeError("Ingrese el Estado del Cheque: (PENDIENTE, APROBADO o RECHAZADO)")
@@ -76,7 +76,7 @@ with open(args.archivo_csv, newline='') as csvfile:
                         resultados.append(row)
 
 # MUESTRA EL PRINT EN PANTALLA DE LOS DATOS DADO POR ARGUMENTOS
-if args.formato == "PANTALLA":
+if args.formato.upper() == "PANTALLA":
     if resultados:
         # GENERA UNA TABLA PARA QUE LA SALIDA DE PANTALLA SEA VISUALMENTE MAS ORDENADA
         print("NroCheque | CodigoBanco | CodigoSucursal | NumeroCuentaOrigen | NumeroCuentaDestino | Valor | FechaOrigen | FechaPago | DNI | Estado")
@@ -90,7 +90,7 @@ if args.formato == "PANTALLA":
         print("No se encontraron resultados.")
 
  # MUESTRA LA EXPORTACIÓN DE LOS DATOS DADO POR ARGUMENTOS
-elif args.formato == "CSV":
+elif args.formato.upper() == "CSV":
      # EXPORTA EL ARCHIVO CSV CON EL 'DNI_HORAACTUAL.CSV'
     nombre_archivo_salida = f"{args.DNI}_{int(time.time())}.csv"
     with open(nombre_archivo_salida, mode='w', newline='') as csvfile:
