@@ -3,11 +3,16 @@ import csv
 import time
 from datetime import datetime
 
-# FUNCIÓN PARA VALIDAR LAS FECHAS
-def validar_fecha(fecha_str):
+# FUNCIÓN PARA VALIDAR Y CONVERSION DE LAS FECHAS EN UN RANGO
+def validar_rango_fechas(rango_str):
     try:
-        fecha = datetime.strptime(fecha_str, '%Y-%m-%d')
-        return fecha
+        fechas = rango_str.split(':')
+        if len(fechas) != 2:
+            raise argparse.ArgumentTypeError("El formato del rango de fechas debe ser 'yyyy-MM-dd:yyyy-MM-dd'")
+        
+        fecha_inicio = datetime.strptime(fechas[0], '%Y-%m-%d')
+        fecha_fin = datetime.strptime(fechas[1], '%Y-%m-%d')
+        return fecha_inicio, fecha_fin
     except ValueError:
         raise argparse.ArgumentTypeError("El formato de fecha debe ser 'yyyy-MM-dd'")
 
@@ -44,7 +49,7 @@ parser.add_argument("DNI", type=int, help="Número de DNI (entre 7 y 8 dígitos)
 parser.add_argument("formato", type=validar_formato, metavar="FORMATO", help="Formato de salida (PANTALLA o CSV)")
 parser.add_argument("accion", type=validar_accion, metavar="ACCION", help="Tipo de cheque (EMITIDO o DEPOSITADO)")
 parser.add_argument("--estado", type=validar_estado, metavar="ESTADO", help="Filtrar por estado (opcional)")
-parser.add_argument("--fecha", type=validar_fecha, help="Filtrar por fecha (opcional)")
+parser.add_argument("--fecha", type=validar_rango_fechas, metavar="FECHA", help="Filtrar por rango de fechas (opcional)")
 
 # OBTENER LOS ARGUMENTOS
 args = parser.parse_args()
@@ -64,21 +69,21 @@ with open(args.archivo_csv, newline='') as csvfile:
     for row in reader:
         numero_cheque = int(row["NroCheque"])
         cuenta_origen = row["NumeroCuentaOrigen"]
-
-        # VERIFICA EL NUMERO DE CHEQUE Y QUE NO HAYA DUPLICADOS
+         # VERIFICA EL NUMERO DE CHEQUE Y QUE NO HAYA DUPLICADOS
         if (numero_cheque, cuenta_origen) in numeros_de_cheque_duplicados:
             print(f"Error: Número de cheque duplicado ({numero_cheque}) en la cuenta {cuenta_origen}.")
         else:
             numeros_de_cheque_duplicados.add((numero_cheque, cuenta_origen))
             if int(row["DNI"]) == args.DNI:
                 if args.estado is None or row["Estado"].lower().strip() == args.estado.lower().strip():
-                    if args.fecha is None or datetime.utcfromtimestamp(int(row["FechaOrigen"])).date() <= args.fecha.date():
+                    fecha_pago = datetime.utcfromtimestamp(int(row["FechaPago"])).date()
+                    if args.fecha is None or (args.fecha[0].date() <= fecha_pago <= args.fecha[1].date()):
                         resultados.append(row)
 
 # MUESTRA EL PRINT EN PANTALLA DE LOS DATOS DADO POR ARGUMENTOS
 if args.formato.upper() == "PANTALLA":
     if resultados:
-        # GENERA UNA TABLA PARA QUE LA SALIDA DE PANTALLA SEA VISUALMENTE MAS ORDENADA
+         # GENERA UNA TABLA PARA QUE LA SALIDA DE PANTALLA SEA VISUALMENTE MAS ORDENADA
         print("NroCheque | CodigoBanco | CodigoSucursal | NumeroCuentaOrigen | NumeroCuentaDestino | Valor | FechaOrigen | FechaPago | DNI | Estado")
         print("-" * 115)
         for resultado in resultados:
