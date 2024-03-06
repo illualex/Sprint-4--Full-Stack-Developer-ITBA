@@ -1,4 +1,4 @@
-# BCIB-Spring4-ITBA
-Spring 4 - ITBA Fullstack - Python
-
-asddasadsdsda
+# Full Stack Developer ITBA (Instituto Tecnológico de Buenos Aires)
+- Sprint: 4
+- Proyecto: BCIB (Banco Capital ITBA)
+- Lenguajes: Python
