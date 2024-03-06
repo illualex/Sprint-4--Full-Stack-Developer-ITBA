@@ -2,3 +2,4 @@
 - Sprint: 4
 - Proyecto: BCIB (Banco Capital ITBA)
 - Lenguajes: Python
+- Base de datos
